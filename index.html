@@ -137,7 +137,12 @@
                         ['name', 'winChance', 'podiumChance', 'expectedRank'].forEach(col => {
                             const td = document.createElement('td');
                             td.className = "px-4 py-2";
-                            td.textContent = result[col];
+                            if (col === 'winChance' || col === 'podiumChance') {
+                                td.textContent = `${(result[col] * 100).toFixed(2)}%`;
+
+                            } else {
+                                td.textContent = result[col];
+                            }
                             tr.appendChild(td);
                         });
 
