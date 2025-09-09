@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>PC2025 Predictions</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800 p-6">
+    <div class="">
+        <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
+            PC2025 Predictions
+        </h1>
+        <br>
+        <div class="text-xl mb-6">
+            Esta página indica previsões para o PC2025. Os resultados foram calculados
+            usando o <a href="https://odds.nmckee.org/competition/PortugalChampionship2025"
+                class="text-blue-500 underline">WCA Competition Predictor</a>, by nmckee.
+            Resultados usados desde 30/08/2024 até 07/09/2025.
+        </div>
+    </div>
+
+    <div id="predictions" class="space-y-6"></div>
+
+    <script>
+
+        const events = ['333', '222', '444', '555', '666', '777', '3oh', '3bld', 'pyra', 'mega', 'skewb', 'clock', 'sq1', '4bld', '5bld'];
+        const eventNames = {
+            '3bld': '3BLD',
+            '4bld': '4BLD',
+            '5bld': '5BLD',
+            '333': '3x3',
+            '222': '2x2',
+            '444': '4x4',
+            '555': '5x5',
+            '666': '6x6',
+            '777': '7x7',
+            '3oh': '3OH',
+            'pyra': 'Pyraminx',
+            'mega': 'Megaminx',
+            'skewb': 'Skewb',
+            'clock': 'Clock',
+            'sq1': 'SQ1'
+        };
+
+        const predictions = document.getElementById('predictions');
+
+        // Tabs container
+        const tabsContainer = document.createElement('div');
+        tabsContainer.className = "flex flex-wrap gap-2 mb-4";
+
+        // Content container
+        const contentContainer = document.createElement('div');
+        contentContainer.className = "bg-white shadow-lg rounded-xl p-6";
+
+
+        let chartInstance;
+
+        // Function to render event
+        function renderEvent(event) {
+            contentContainer.innerHTML = `<h2 class="text-2xl font-semibold mb-4">${eventNames[event]}</h2>`;
+
+            fetch(`events/PC2025_results_${event}.json`)
+                .then(response => response.json())
+                .then(data => {
+
+                    // Chart
+                    const chartWrapper = document.createElement('div');
+                    chartWrapper.className = "flex justify-center items-center";
+                    const canvas = document.createElement('canvas');
+                    canvas.id = "winChart";
+                    canvas.className = "mt-2 max-w-md";
+
+                    const labels = data.results.map(r => r.name);
+                    const winChances = data.results.map(r => parseFloat(r.winChance) * 100);
+
+                    canvas.id = "winChart";
+                    canvas.className = "mt-2 max-w-md";
+                    chartWrapper.appendChild(canvas);
+                    contentContainer.appendChild(chartWrapper);
+                    if (chartInstance) chartInstance.destroy();
+                    chartInstance = new Chart(canvas, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: winChances,
+                                backgroundColor: labels.map((_, i) => `hsl(${i * 40 % 360}, 70%, 60%)`)
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'right',
+                                },
+                                title: {
+                                    display: true, text: 'Win Chance Distribution (%)',
+                                    font: {
+                                        size: 16,
+                                        weight: 'bold'
+                                    },
+                                    position: 'top',
+                                    align: 'start'
+                                }
+                            },
+                            layout: {
+                                padding: 0
+                            },
+                            maintainAspectRatio: false
+                        }
+                    });
+                    // Table
+                    const table = document.createElement('table');
+                    table.className = "table-auto border-collapse w-full text-left";
+
+                    const thead = document.createElement('thead');
+                    thead.innerHTML = `
+                        <tr class="bg-gray-100">
+                        <th class="px-4 py-2">Name</th>
+                        <th class="px-4 py-2">Win Chance</th>
+                        <th class="px-4 py-2">Podium Chance</th>
+                        <th class="px-4 py-2">Expected Rank</th>
+                        </tr>`;
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement('tbody');
+                    data.results.forEach((result, i) => {
+                        const tr = document.createElement('tr');
+                        tr.className = i % 2 === 0 ? "bg-white" : "bg-gray-50";
+
+                        ['name', 'winChance', 'podiumChance', 'expectedRank'].forEach(col => {
+                            const td = document.createElement('td');
+                            td.className = "px-4 py-2";
+                            td.textContent = result[col];
+                            tr.appendChild(td);
+                        });
+
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+                    contentContainer.appendChild(table);
+
+
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Create tabs
+        events.forEach((event, idx) => {
+            const tab = document.createElement('button');
+            tab.textContent = eventNames[event];
+            tab.className = `px-4 py-2 rounded-lg border ${idx === 0 ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+
+            tab.onclick = () => {
+                Array.from(tabsContainer.children).forEach(btn => btn.className = "px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-gray-100");
+                tab.className = "px-4 py-2 rounded-lg border bg-blue-500 text-white";
+                renderEvent(event);
+            };
+
+            tabsContainer.appendChild(tab);
+        });
+
+        // Initialize first event
+        renderEvent(events[0]);
+
+        predictions.appendChild(tabsContainer);
+        predictions.appendChild(contentContainer);
+    </script>
+</body>
+
+</html>
